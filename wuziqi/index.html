@@ -42,14 +42,27 @@
                 context.lineTo(i, 640); 
                 context.closePath(); 
                 context.stroke(); 
-            } 
-        } 
+            }
+
+            resetGame();
+            bingEvents();
+        }
+
+        function reStart(){
+            context.clearRect(0,0,640,640);
+            for(var i=0;i<15;i++)
+              for(var j=0;j<15;j++)
+                chessData[i][j] = 0;
+            isWhite = true;
+            isWell = false;
+        }
+
         function play(e) {//鼠标点击时发生 
-            var x = parseInt((e.clientX - 20) / 40);//计算鼠标点击的区域，如果点击了（65，65），那么就是点击了（1，1）的位置 
-            var y = parseInt((e.clientY - 20) / 40); 
+            var x = parseInt((e.clientX - 20) / 40);//计算鼠标点击的区域，如果点击了（65，65），那么就是点击了（1，1）的位置
+            var y = parseInt((e.clientY - 20) / 40);
   
             if (chessData[x][y] != 0) {//判断该位置是否被下过了 
-                alert("你不能在这个位置下棋"); 
+             //   alert("你不能在这个位置下棋");
                 return; 
             } 
   
@@ -60,12 +73,15 @@
             else { 
                 isWhite = true; 
                 drawChess(2, x, y); 
-            } 
+            }
+            saveGameState();
+            if(isWell)
+                localStorage['game.state'] = 'done';
   
         } 
         function drawChess(chess, x, y) {//参数为，棋（1为白棋，2为黑棋），数组位置 
             if (isWell == true) { 
-                alert("已经结束了，如果需要重新玩，请刷新"); 
+                alert("已经结束!");
                 return; 
             } 
             if (x >= 0 && x < 15 && y >= 0 && y < 15) { 
@@ -146,15 +162,86 @@
                 else { 
                     alert("黑棋赢了"); 
                 } 
-                isWell = true;//设置该局棋盘已经赢了，不可以再走了 
+                isWell = true;//设置该局棋盘已经赢了，不可以再走了
+
             } 
-        } 
+        }
+
+        function isSupportLocalStorage(){
+            try{
+                return 'localStorage' in window && window['localStorage'] != null;
+            }catch(e){
+                return false;
+            }
+        }
+
+        function saveGameState(){
+            if(!isSupportLocalStorage()){
+                return false;
+            }
+            localStorage['game.state'] = 'inprogress';
+            localStorage['chessData'] = JSON.stringify(chessData);
+            localStorage['player'] =  isWhite;
+
+        }
+
+        function resetGame(){
+            if(!isSupportLocalStorage()){
+                return;
+            }
+
+          //  if(localStorage['game.state'] != 'inprogress'){
+          ///      return;
+          //  }
+
+            chessData = JSON.parse(localStorage['chessData']);
+            for(var i=0;i<15;i++){
+                for(var j=0;j<15;j++){
+                    if(chessData[i][j] == 1){
+                        context.drawImage(img_w, i * 40 + 20, j * 40 + 20);//绘制白棋
+                    }else if(chessData[i][j] == 2){
+                        context.drawImage(img_b, i * 40 + 20, j * 40 + 20);
+                    }
+                }
+            }
+            isWhite = localStorage['player'] === 'true';
+            isWell = localStorage['game.state'] == 'done';
+        }
+
+        function handle_storage(e){
+            if(!e){
+                e = window.event;
+            }
+           console.log('save data!!!');
+        }
+
+        function bingEvents(){
+
+            var btn = document.querySelector('.btn');
+            btn.onclick = function(){
+                localStorage.clear();
+                reStart();
+                drawRect();
+                localStorage['game.state'] = 'inprogress';
+            }
+
+            if(window.addEventListener){
+                window.addEventListener("storage", handle_storage, false);
+            }else{
+                document.attachEvent("onstorage", handle_storage);
+            }
+
+
+
+        }
+
     </script> 
 </head> 
 <body onload="drawRect()"> 
     <div> 
         <canvas width="640" id="canvas" onmousedown="play(event)" height="640">你的浏览器不支持HTML5 canvas  ，请使用 google chrome 浏览器 打开. 
-        </canvas> 
+        </canvas>
+        <button class="btn" value="reset">reset</button>
     </div> 
   
 </body> 
